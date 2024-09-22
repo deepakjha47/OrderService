@@ -1,6 +1,7 @@
 package com.dpanalytics.OrderService.service;
 
 import com.dpanalytics.OrderService.entity.Order;
+import com.dpanalytics.OrderService.external.client.ProductService;
 import com.dpanalytics.OrderService.model.OrderRequest;
 import com.dpanalytics.OrderService.repository.OrderRepository;
 import lombok.extern.log4j.Log4j2;
@@ -16,12 +17,16 @@ public class OrderServiceImpl implements OrderService{
     @Autowired
     private OrderRepository orderRepository;
 
+    @Autowired
+    private ProductService productService;
+
     @Override
     public long placeOrder(OrderRequest orderRequest) {
         //Order Entity -> save the data with status order created
         //Product Service -> blocks product(reduce the quantity in db)
         //Payment Service -> used for payments(Either success/Fail)
         log.info("Placing Order Request: {}", orderRequest);
+        productService.reduceProductQuantity(orderRequest.getProductId(), orderRequest.getQuantity());
         Order order = Order.builder()
                 .productId(orderRequest.getProductId())
                 .quantity(orderRequest.getQuantity())

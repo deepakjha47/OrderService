@@ -1,11 +1,14 @@
 package com.dpanalytics.OrderService.service;
 
 import com.dpanalytics.OrderService.entity.Order;
+import com.dpanalytics.OrderService.external.client.PaymentService;
 import com.dpanalytics.OrderService.external.client.ProductService;
+import com.dpanalytics.OrderService.external.request.PaymentRequest;
 import com.dpanalytics.OrderService.model.OrderRequest;
 import com.dpanalytics.OrderService.repository.OrderRepository;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -19,6 +22,9 @@ public class OrderServiceImpl implements OrderService{
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private PaymentService paymentService;
 
     @Override
     public long placeOrder(OrderRequest orderRequest) {
@@ -35,6 +41,29 @@ public class OrderServiceImpl implements OrderService{
                 .orderDate(Instant.now())
                 .build();
         order = orderRepository.save(order);
+
+        log.info("Calling Payment service to complete the payment");
+
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+                .orderId(order.getId())
+                .paymentMode(orderRequest.getPaymentMode())
+                .amount(orderRequest.getTotalAmount())
+                .referenceNumber("kmmdk")
+                .build();
+
+        String orderStatus = null;
+        try {
+            paymentService.doPayment(paymentRequest);
+            log.info("Order placed successfully so changing status to placed");
+            orderStatus = "PLACED";
+        } catch(Exception e) {
+            log.error("Payment failed, changing status to failed");
+            orderStatus = "PAYMENT_FAILED";
+        }
+
+        order.setOrderStatus(orderStatus);
+        orderRepository.save(order);
+
         log.info("Order placed successfully for id: {}", order.getId());
         return order.getId();
     }

@@ -11,16 +11,12 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class OrderResponse {
+public class PaymentResponse {
+    private long paymentId;
     private long orderId;
-    private Instant orderDate;
-    private String orderStatus;
+    private String status;
+    private PaymentMode paymentMode;
     private long amount;
+    private Instant paymentDate;
 
-    /**
-     * invoking product details using rest template instead of feign client
-     */
-    private ProductDetails productDetails;
-
-    private PaymentResponse paymentResponse;
 }
